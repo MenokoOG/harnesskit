@@ -2,10 +2,11 @@ import pathlib
 import tempfile
 import unittest
 
-from harnesskit.guards import StuckDetector, VerifyOnStop, drain_inbox
+from harnesskit.guards import StuckDetector, drain_inbox
 from harnesskit.loop import Agent
 from harnesskit.model import FakeModel, reply
 from harnesskit.tools import default_tools
+from harnesskit.verify import VerifyOnStop
 
 SAME = ("bash", {"cmd": "echo hi"})
 
@@ -36,10 +37,11 @@ class GuardTests(unittest.TestCase):
             model = FakeModel([
                 reply(calls=[("write_file", {"path": p, "content": "x = 1\n"})]),
                 reply("done"),
-                reply(calls=[("bash", {"cmd": "echo unittest ok"})]),
+                reply(calls=[("bash", {"cmd": "python -m unittest"})]),
                 reply("really done"),
             ])
-            agent = Agent(model, default_tools(), stop_guards=[VerifyOnStop()])
+            tools = default_tools() | {"bash": lambda cmd: "exit=0"}
+            agent = Agent(model, tools, stop_guards=[VerifyOnStop()])
             self.assertEqual(agent.run("x"), "really done")
 
     def test_verify_nudges_are_capped(self):

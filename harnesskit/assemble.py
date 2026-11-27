@@ -7,15 +7,16 @@ from typing import Callable
 from .context import Compactor, discover_context
 from .edit import edit
 from .extend import Hooks, discover_skills, make_skill_tool, make_subagent_tool, skills_index
-from .guards import StuckDetector, VerifyOnStop, drain_inbox
+from .guards import StuckDetector, drain_inbox
 from .loop import Agent
 from .policy import DEFAULT_RULES, Policy, gated
 from .prompt import PromptBuilder
 from .tools import default_tools
+from .verify import VerifyOnStop
 
 
 def no_env_writes(name: str, args: dict) -> str | None:
-    if name in ("write_file", "edit", "search_replace") and str(args.get("path", "")).endswith(".env"):
+    if name in ("write_file", "edit", "search_replace") and Path(str(args.get("path", ""))).name.startswith(".env"):
         return "writing .env files is not allowed"
     return None
 

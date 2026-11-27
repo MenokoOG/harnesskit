@@ -27,8 +27,6 @@ class PolicyTests(unittest.TestCase):
     def test_floor_catches_simple_variants(self):
         for cmd in ("rm -rf /*", "rm -fr /", 'sh -c "rm -rf /"'):
             self.assertEqual(self.p.decide(cmd, "yolo"), FORBIDDEN, cmd)
-        # Known gap, left as the stretch exercise: long flags and ~ are not covered.
-        self.assertNotEqual(self.p.decide("rm --recursive --force /", "yolo"), FORBIDDEN)
 
     def test_yolo_turns_prompts_into_allows(self):
         self.assertEqual(self.p.decide("git push", "yolo"), ALLOW)

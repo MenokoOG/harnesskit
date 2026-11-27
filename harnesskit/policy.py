@@ -7,18 +7,10 @@ import shlex
 from dataclasses import dataclass
 from typing import Callable
 
+from .floor import hits_floor
+
 ALLOW, PROMPT, FORBIDDEN = "allow", "prompt", "forbidden"
 ORDER = [ALLOW, PROMPT, FORBIDDEN]
-
-# The floor. Checked first, in every mode, and no rule or flag can lift it.
-HARDLINE = [
-    re.compile(r"\brm\s+-\w*r\w*\s+(-\w+\s+)*/(?=[\s*\"';|&]|$)"),
-    re.compile(r"\bmkfs\b"),
-    re.compile(r"\bdd\s+.*of=/dev/"),
-    re.compile(r":\(\)\s*\{"),
-    re.compile(r"\bshutdown\b"),
-]
-
 
 @dataclass(frozen=True)
 class Rule:
@@ -43,9 +35,9 @@ class Policy:
         self.rules = rules
 
     def decide(self, cmd: str, mode: str = "default") -> str:
-        if any(p.search(cmd) for p in HARDLINE):
+        if hits_floor(cmd):
             return FORBIDDEN
-        compound = bool(re.search(r"[;&|`$<>]", cmd))  # chains and redirects never auto-allow
+        compound = bool(re.search(r"[;&|`$<>\n\r]", cmd))  # newlines chain commands too
         try:
             argv = shlex.split(cmd)
         except ValueError:

@@ -30,14 +30,15 @@ class CapstoneTests(unittest.TestCase):
                 reply(calls=[("write_file", {"path": str(root / ".env"), "content": "KEY=1"})]),
                 reply(calls=[("bash", {"cmd": "rm -rf /"})]),
                 reply("done"),  # vetoed: code changed, nothing run since
-                reply(calls=[("bash", {"cmd": "echo unittest ok"})]),
+                reply(calls=[("bash", {"cmd": "python -m unittest"})]),
                 reply("shipped"),
             ])
-            agent = build_agent(model, root=root, skills_dir=root / "skills", bash=fake_bash)
+            agent = build_agent(model, root=root, skills_dir=root / "skills", bash=fake_bash,
+                                ask=lambda cmd: cmd == "python -m unittest")
             self.assertEqual(agent.run("fix x"), "shipped")
             self.assertEqual(Path(target).read_text(), "x = 2\n")
             self.assertFalse((root / ".env").exists())
-            self.assertEqual(ran, ["echo unittest ok"])
+            self.assertEqual(ran, ["python -m unittest"])
             self.assertIn("Use 4 spaces.", agent.system)
             self.assertIn("review: How to review a diff", agent.system)
             outs = {m["content"] for m in agent.messages if m["role"] == "tool"}

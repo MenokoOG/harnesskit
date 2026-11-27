@@ -4,6 +4,8 @@ from __future__ import annotations
 import pathlib
 import unicodedata
 
+from .textio import newline_of, read_exact, to_newline, write_exact
+
 QUOTES = {"‘": "'", "’": "'", "“": '"', "”": '"'}
 
 
@@ -18,21 +20,23 @@ def canon(line: str) -> str:
 def edit(path: str, old: str, new: str) -> str:
     """Replace one occurrence of old with new. old must match exactly once, so include enough lines."""
     p = pathlib.Path(path)
-    text = p.read_text(encoding="utf-8")
+    text = read_exact(p)
+    nl = newline_of(text)
+    old, new = to_newline(old, nl), to_newline(new, nl)
     n = text.count(old)
     if n == 1:
-        p.write_text(text.replace(old, new, 1), encoding="utf-8")
+        write_exact(p, text.replace(old, new, 1))
         return "OK"
     if n > 1:
         return f"ERROR: old string occurs {n} times. Add surrounding lines to make it unique."
     # Fallback: compare whole lines after normalization, and replace whole lines.
-    lines = text.split("\n")
-    want = [canon(x) for x in old.split("\n")]
+    lines = text.split(nl)
+    want = [canon(x) for x in old.split(nl)]
     have = [canon(x) for x in lines]
     hits = [i for i in range(len(lines) - len(want) + 1) if have[i : i + len(want)] == want]
     if len(hits) != 1:
         return "ERROR: old string not found" if not hits else "ERROR: old string is ambiguous after normalization"
     i = hits[0]
-    lines[i : i + len(want)] = new.split("\n")
-    p.write_text("\n".join(lines), encoding="utf-8")
+    lines[i : i + len(want)] = new.split(nl)
+    write_exact(p, nl.join(lines))
     return "OK (matched after quote and whitespace normalization)"

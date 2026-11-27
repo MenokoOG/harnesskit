@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from .model import Model
+from .schema import parameters_of
 
 
 class LimitReached(Exception):
@@ -35,7 +36,10 @@ class Agent:
 
     def schemas(self) -> list[dict]:
         """Rebuilt every turn, so tools added mid-run (module 3) show up."""
-        return [{"name": n, "description": (f.__doc__ or n).strip()} for n, f in list(self.tools.items())]
+        return [
+            {"name": n, "description": (f.__doc__ or n).strip(), "parameters": parameters_of(f)}
+            for n, f in list(self.tools.items())
+        ]
 
     def check_limits(self) -> None:
         if self.turns >= self.max_turns:
@@ -91,4 +95,9 @@ class Agent:
                 self.stop_reason = "done"
                 return resp.get("content", "")
             for call in calls:  # serial on purpose: the simplest safe choice
-                self.messages.append(self.execute(call))
+                result = self.execute(call)
+                self.messages.append(result)
+                for guard in self.stop_guards:  # guards see results before compaction can drop them
+                    observe = getattr(guard, "observe", None)
+                    if observe:
+                        observe(call, result["content"])

@@ -4,6 +4,8 @@ from __future__ import annotations
 import pathlib
 import subprocess
 
+from .textio import newline_of, read_exact, to_newline, write_exact
+
 
 def bash(cmd: str, timeout: int = 120) -> str:
     """Run a shell command and return its exit code, stdout and stderr."""
@@ -29,11 +31,13 @@ def write_file(path: str, content: str) -> str:
 def search_replace(path: str, search: str, replace: str) -> str:
     """Replace one exact occurrence of search with replace. Fails if it is missing or not unique."""
     p = pathlib.Path(path)
-    text = p.read_text(encoding="utf-8")
+    text = read_exact(p)
+    nl = newline_of(text)
+    search, replace = to_newline(search, nl), to_newline(replace, nl)
     n = text.count(search)
     if n != 1:
         return f"ERROR: search string occurs {n} times, it must occur exactly once"
-    p.write_text(text.replace(search, replace, 1), encoding="utf-8")
+    write_exact(p, text.replace(search, replace, 1))
     return "OK"
 
 
