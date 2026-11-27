@@ -57,4 +57,8 @@ Suggested order: R10 first, because items 2 and 3 show how far string checks go.
 
 ## My notes
 
-TODO (Lawrence): what surprised you, in your own words.
+What surprised me most is that all 43 tests passed while plan mode could still write files. Plan mode is supposed to be read only. A passing test suite only told me about the things the tests asked.
+
+The next one was the newline. The policy blocked other ways to chain commands, but a new line got through. So, the safety check has to read a command the same way the shell runs it.
+
+My takeaway is that string checks are not a sandbox. The known gaps are still open, and a sandbox is what I would add first. This is a learning project and I would not trust it with a machine I care about.
